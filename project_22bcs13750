@@ -1,0 +1,193 @@
+1. File 1: model_loader.py (Responsible for loading the model)
+python
+Copy code
+import tensorflow as tf
+
+# Load the pre-trained TensorFlow model
+def load_model(path):
+    """
+    This function loads the pre-trained model from the specified path.
+
+    Parameters:
+    path (str): The path to the saved model file (e.g., 'fraud_detection_model.h5')
+
+    Returns:
+    model (tensorflow.keras.Model): Loaded TensorFlow model
+    """
+    try:
+        # Try to load the model using TensorFlow's Keras API
+        model = tf.keras.models.load_model(path)
+        print("AI model loaded successfully.")
+        return model
+    except Exception as e:
+        # If an error occurs during model loading (e.g., file not found), print the error
+        print(f"Error loading model: {e}")
+        return None
+
+def test_model_loading(model_path):
+    """
+    A simple test function to check if the model loads correctly.
+
+    Parameters:
+    model_path (str): The path to the saved model.
+    """
+    model = load_model(model_path)
+    if model:
+        print("Model loading test successful.")
+    else:
+        print("Model loading failed. Please check the path or the model file.")
+Explanation of model_loader.py:
+load_model: Loads the model from the specified file path.
+test_model_loading: A helper function to test if the model is loaded correctly. It ensures the file path is correct and the model is usable.
+2. File 2: fraud_predictor.py (Responsible for predicting fraud using the model)
+python
+Copy code
+import numpy as np
+
+def predict_fraud(model, transaction_data):
+    """
+    Predicts whether a given transaction is fraudulent using the provided model.
+
+    Parameters:
+    model (tensorflow.keras.Model): The pre-trained model to use for prediction.
+    transaction_data (list): A list containing features of the transaction (e.g., amount, account age, etc.)
+
+    Returns:
+    bool: Returns True if the transaction is predicted to be fraudulent, False otherwise.
+    """
+    try:
+        # Convert the input data into a NumPy array
+        transaction_array = np.array([transaction_data])
+
+        # Use the model to predict the transaction's status (fraud or not)
+        prediction = model.predict(transaction_array)
+
+        # Return whether the prediction is above the threshold (0.5 for binary classification)
+        return prediction[0][0] > 0.5
+
+    except Exception as e:
+        print(f"Error during fraud prediction: {e}")
+        return False
+
+def explain_prediction(prediction):
+    """
+    Explains the prediction result.
+
+    Parameters:
+    prediction (bool): The prediction result (True or False).
+    
+    Returns:
+    str: A string message explaining the result.
+    """
+    if prediction:
+        return "ALERT: Fraudulent transaction detected!"
+    else:
+        return "Transaction is normal."
+Explanation of fraud_predictor.py:
+predict_fraud: This function takes the model and transaction data as input, processes the data, and uses the model to predict whether the transaction is fraudulent.
+explain_prediction: A helper function to explain the fraud prediction result in a user-friendly way.
+3. File 3: transaction_input.py (Handles user input for transaction data)
+python
+Copy code
+def get_transaction_input():
+    """
+    Takes user input for the transaction details and returns them as a list.
+
+    Returns:
+    list: A list containing the transaction features (amount, account age, location risk, transaction type)
+    """
+    try:
+        # Get transaction details from the user
+        amount = float(input("Enter the transaction amount: $"))
+        account_age = int(input("Enter the account age (in months): "))
+        location_risk = int(input("Enter location risk level (1: Low Risk to 5: High Risk): "))
+        transaction_type = int(input("Enter transaction type (1: Online, 2: In-Store): "))
+
+        # Return the transaction data as a list
+        transaction_data = [amount, account_age, location_risk, transaction_type]
+
+        print("\nTransaction Details:")
+        print(f"Amount: ${amount}")
+        print(f"Account Age: {account_age} months")
+        print(f"Location Risk: {location_risk}")
+        print(f"Transaction Type: {'Online' if transaction_type == 1 else 'In-Store'}")
+
+        return transaction_data
+
+    except ValueError as e:
+        print(f"Invalid input detected: {e}")
+        return None
+Explanation of transaction_input.py:
+get_transaction_input: This function prompts the user for input regarding a transaction's amount, account age, location risk, and type (online or in-store). It returns these values as a list for further processing.
+If the user enters invalid data (like a non-numeric value), the function handles it by catching the ValueError and returning None.
+4. File 4: transaction_evaluator.py (Responsible for evaluating the transaction using the model)
+python
+Copy code
+from model_loader import load_model
+from fraud_predictor import predict_fraud, explain_prediction
+from transaction_input import get_transaction_input
+
+def evaluate_transaction(model):
+    """
+    Evaluates a transaction using the model and provides feedback to the user.
+
+    Parameters:
+    model (tensorflow.keras.Model): The pre-trained model used to predict fraud.
+    """
+    print("\n--- Evaluate New Transaction ---")
+
+    # Get user input for the transaction details
+    transaction_data = get_transaction_input()
+
+    if transaction_data is None:
+        print("Transaction evaluation failed due to invalid input. Try again.")
+        return
+
+    # Make a fraud prediction based on the transaction data
+    is_fraudulent = predict_fraud(model, transaction_data)
+
+    # Explain the prediction result
+    result_message = explain_prediction(is_fraudulent)
+    print(result_message)
+Explanation of transaction_evaluator.py:
+evaluate_transaction: This function integrates all parts of the process:
+It first gets the transaction details by calling get_transaction_input.
+It then uses predict_fraud to predict whether the transaction is fraudulent or not.
+Finally, it uses explain_prediction to generate a user-friendly message explaining the result.
+5. File 5: main.py (Main driver script)
+python
+Copy code
+from transaction_evaluator import evaluate_transaction
+from model_loader import load_model
+
+def main():
+    print("=================================")
+    print("       Fraud Detection System    ")
+    print("=================================")
+
+    # Path to the model (replace with actual path to the saved model)
+    model_path = "fraud_detection_model.h5"
+    
+    # Load the model
+    model = load_model(model_path)
+
+    if not model:
+        print("Exiting the system due to model loading error.")
+        return
+
+    # Main loop for user interaction
+    while True:
+        print("\n1. Evaluate Transaction")
+        print("2. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            evaluate_transaction(model)
+        elif choice == "2":
+            print("Exiting the Fraud Detection System. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
